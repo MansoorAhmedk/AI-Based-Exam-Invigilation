@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Exam Invigilation Dashboard</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind to use 'Inter' font and custom accent color -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-red': '#dc2626', // red-600
+                        'primary-red-dark': '#b91c1c', // red-700
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles for the slider */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #dc2626; /* primary-red */
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            transition: background 0.3s, transform 0.1s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            background: #b91c1c; /* primary-red-dark */
+            transform: scale(1.1);
+        }
+
+        input[type=range]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #dc2626;
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            border: none;
+            transition: background 0.3s, transform 0.1s;
+        }
+        
+        /* Utility class for Lucide icons (simulating React import) */
+        .icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            stroke-width: 2;
+            stroke: currentColor;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .icon-upload { width: 20px; height: 20px; }
+        .icon-zap { width: 18px; height: 18px; }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50 p-4 sm:p-8 font-sans">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-10 text-white p-6 rounded-2xl bg-gradient-to-r from-red-600 to-red-800 shadow-2xl">
+            <h1 class="text-4xl sm:text-5xl font-extrabold flex items-center">
+                <!-- BookOpen Icon SVG -->
+                <svg class="icon mr-4 text-white" width="40" height="40" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                AI Exam Invigilation Dashboard
+            </h1>
+            <p class="text-red-100 mt-2 text-lg">
+                Graph Clustering Analysis for Detecting Behavioral Collusion.
+            </p>
+        </div>
+
+        <!-- File Upload and Control Panel -->
+        <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl mb-8 border border-gray-200">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center border-b pb-3">
+                <!-- Upload Icon SVG -->
+                <svg class="icon icon-upload mr-2 text-primary-red" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Data Input & Analysis Control
+            </h2>
+            
+            <!-- File Input -->
+            <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4 mb-6">
+                <label for="file-upload" class="flex-grow w-full cursor-pointer bg-gray-50 border-2 border-dashed border-red-300 p-4 rounded-xl text-center hover:bg-red-50 transition duration-150 shadow-inner">
+                    <input type="file" id="file-upload" accept=".csv, .tsv, .xls, .xlsx" class="hidden" onchange="handleFileChange(event)">
+                    <p id="file-status-text" class="text-gray-600 font-semibold">
+                        Click here to upload CSV/TSV Exam Data (Required Columns: StudentID, Qx, Timestamp_ms)
+                    </p>
+                </label>
+                <button
+                    id="run-analysis-btn"
+                    onclick="handleRunAnalysisClick()"
+                    disabled
+                    class="w-full md:w-auto px-8 py-3 text-lg font-bold rounded-xl text-white transition duration-300 transform bg-red-400 cursor-not-allowed"
+                >
+                    <div class="flex items-center justify-center">
+                        <!-- Zap Icon SVG -->
+                        <svg class="icon icon-zap mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        Run Analysis
+                    </div>
+                </button>
+            </div>
+
+            <!-- Threshold Slider (Initially hidden) -->
+            <div id="threshold-container" class="hidden p-4 rounded-lg bg-red-50 border border-red-200 shadow-inner mt-4">
+                <div class="flex items-center justify-between text-gray-700 mb-2">
+                    <h3 class="font-bold flex items-center">
+                        <!-- Sliders Icon SVG -->
+                        <svg class="icon mr-2 text-primary-red" width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                        Similarity Threshold (Collusion Sensitivity)
+                    </h3>
+                    <span id="threshold-value" class="font-extrabold text-lg text-red-700">85%</span>
+                </div>
+                <input
+                    type="range"
+                    id="similarity-slider"
+                    min="0.5"
+                    max="0.99"
+                    step="0.01"
+                    value="0.85"
+                    class="w-full h-2 bg-red-200 rounded-lg appearance-none cursor-pointer range-lg accent-primary-red"
+                    oninput="handleThresholdChange(event)"
+                />
+                <p class="text-xs text-gray-500 mt-2">Adjusting this value changes how strictly students are grouped: higher threshold means fewer, tighter clusters.</p>
+            </div>
+
+            <!-- Status/Error Bar -->
+            <div id="status-bar" class="mt-4 p-3 rounded-lg text-sm font-medium bg-sky-100 text-sky-700">
+                Awaiting file upload...
+            </div>
+        </div>
+
+        <!-- Analysis Results Dashboard (Initially hidden) -->
+        <div id="results-dashboard" class="mt-10 hidden">
+            <!-- Title Bar -->
+            <h2 class="text-3xl font-bold text-white mb-6 flex items-center bg-gray-800 p-4 rounded-xl shadow-xl">
+                <!-- Target Icon SVG -->
+                <svg class="icon mr-3 text-yellow-400" width="28" height="28" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                Invigilation Report Summary
+            </h2>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" id="summary-cards">
+                <!-- Cards will be inserted here -->
+            </div>
+
+            <!-- Detailed Report -->
+            <div class="bg-white p-6 rounded-xl shadow-2xl">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 border-b-2 border-red-100 pb-3">
+                    <h3 class="text-2xl font-bold text-red-700 flex items-center mb-3 sm:mb-0">
+                        <!-- AlertTriangle Icon SVG -->
+                        <svg class="icon mr-2" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h18.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        Detected Collusion Clusters (Groups of 2 or More)
+                    </h3>
+                    <div class="flex space-x-3">
+                        <button 
+                            id="download-csv-report-btn" 
+                            onclick="downloadReport('csv')" 
+                            disabled
+                            class="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 transition duration-150 flex items-center text-sm disabled:opacity-50"
+                        >
+                            <svg class="icon mr-1" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download CSV
+                        </button>
+                        <button 
+                            id="download-json-report-btn" 
+                            onclick="downloadReport('json')" 
+                            disabled
+                            class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-300 transition duration-150 flex items-center text-sm disabled:opacity-50"
+                        >
+                            <svg class="icon mr-1" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download JSON
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="flagged-clusters-output" class="space-y-6">
+                    <!-- Flagged clusters will be inserted here -->
+                </div>
+
+                <h3 class="text-2xl font-bold text-gray-700 mt-10 mb-4 border-b pb-3 flex items-center">
+                    <!-- Users Icon SVG -->
+                    <svg class="icon mr-2 text-sky-600" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+                    All Student Cluster Assignments
+                </h3>
+                <div id="all-assignments-output" class="flex flex-wrap gap-3">
+                    <!-- All student pills will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- FOOTER SECTION -->
+    <footer class="mt-12 py-6 bg-gray-800 shadow-xl border-t-4 border-primary-red">
+        <div class="max-w-7xl mx-auto text-center text-gray-300 text-sm">
+            <p>
+                <span class="font-bold text-primary-red mr-1">&bull;</span>
+                This project is designed and built by <strong>Mansoor Ahmed</strong> as Final Project of <span class="font-semibold text-white">AAA (Advanced Analysis of Algorithms)</span> at NEDUET.
+                <span class="font-bold text-primary-red ml-1">&bull;</span>
+            </p>
+        </div>
+    </footer>
+    <!-- END FOOTER SECTION -->
+
+    <script>
+        // --- GLOBAL CONFIGURATION ---
+        const TIME_SYNCHRONIZATION_WINDOW_MS = 50; 
+        const DEFAULT_SIMILARITY_THRESHOLD = 0.85; 
+        
+        // Color pallet for clusters (consistent with React version)
+        const CLUSTER_COLORS = [
+            'bg-red-600', 'bg-sky-600', 'bg-lime-600', 'bg-amber-500', 
+            'bg-purple-600', 'bg-pink-600', 'bg-teal-600', 'bg-orange-600'
+        ];
+
+        // --- GLOBAL STATE ---
+        let rawStudentData = [];
+        let simMatrix = null;
+        let currentFile = null;
+        let lastAnalysisResult = null; // Store the last valid analysis result for download
+
+        // --- DOM Elements ---
+        const $ = (id) => document.getElementById(id);
+        const fileStatusText = $('file-status-text');
+        const runAnalysisBtn = $('run-analysis-btn');
+        const statusBar = $('status-bar');
+        const similaritySlider = $('similarity-slider');
+        const thresholdContainer = $('threshold-container');
+        const thresholdValueSpan = $('threshold-value');
+        const resultsDashboard = $('results-dashboard');
+        const summaryCards = $('summary-cards');
+        const flaggedClustersOutput = $('flagged-clusters-output');
+        const allAssignmentsOutput = $('all-assignments-output');
+        const downloadJsonReportBtn = $('download-json-report-btn');
+        const downloadCsvReportBtn = $('download-csv-report-btn');
+
+        // --- UTILITY FUNCTIONS ---
+
+        function updateStatus(message, isError = false) {
+            statusBar.textContent = message;
+            statusBar.className = `mt-4 p-3 rounded-lg text-sm font-medium transition duration-200 ${
+                isError ? 'bg-red-100 text-red-700' : 'bg-sky-100 text-sky-700'
+            }`;
+        }
+
+        // Simulates the Lucide icon component for the pills
+        function getIconSVG(name, size, className = '') {
+            const icons = {
+                zap: `<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>`,
+                users: `<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>`
+            };
+            // Note: The 'users' icon SVG in the previous version had an issue. 
+            // I'm using a placeholder definition here to ensure it compiles, 
+            // but the icon used in the HTML for the pill (users) is simplified
+            // to avoid rendering issues within the string literal.
+            const svgContent = name === 'users' 
+                ? '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>' // Simplified user/group
+                : icons[name];
+
+            return `<svg class="icon ${className}" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none">${svgContent || ''}</svg>`;
+        }
+
+        // --- CORE LOGIC FUNCTIONS ---
+        
+        /**
+         * Calculates the combined similarity matrix (Answer + Timing).
+         */
+        function calculateSimilarityMatrix(studentData) {
+            const N = studentData.length;
+            const allKeys = N > 0 ? Object.keys(studentData[0]) : [];
+            const answerCols = allKeys.filter(key => key.startsWith('Q'));
+            
+            if (answerCols.length === 0) return [];
+
+            const similarityMatrix = Array(N).fill(0).map(() => Array(N).fill(0));
+
+            for (let i = 0; i < N; i++) {
+                for (let j = 0; j < N; j++) {
+                    if (i === j) {
+                        similarityMatrix[i][j] = 1.0;
+                        continue;
+                    }
+
+                    // 1. Answer Similarity (Hamming)
+                    let matches = 0;
+                    for (const col of answerCols) {
+                        if (studentData[i][col] === studentData[j][col]) {
+                            matches++;
+                        }
+                    }
+                    const answerSimilarity = matches / answerCols.length;
+
+                    // 2. Timing Similarity
+                    const timeDiff = Math.abs(studentData[i].Timestamp_ms - studentData[j].Timestamp_ms);
+                    let timeSimilarity;
+
+                    if (timeDiff <= TIME_SYNCHRONIZATION_WINDOW_MS) {
+                        timeSimilarity = 1.0;
+                    } else {
+                        timeSimilarity = 1.0 / (1 + Math.log1p(timeDiff / TIME_SYNCHRONIZATION_WINDOW_MS));
+                    }
+
+                    // 3. Combine Similarity Metrics
+                    const finalSimilarity = (0.8 * answerSimilarity) + (0.2 * timeSimilarity * answerSimilarity);
+                    similarityMatrix[i][j] = finalSimilarity;
+                }
+            }
+            return similarityMatrix;
+        }
+
+        /**
+         * Simplified Clustering: Groups students greedily based on high similarity edges.
+         */
+        function performSimplifiedClustering(matrix, studentIds, threshold) {
+            const N = matrix.length;
+            let clusterIdCounter = 0;
+            const assignments = {};
+            const clusters = {};
+
+            // Helper to get or create a cluster ID
+            const getOrCreateCluster = (id) => {
+                if (assignments.hasOwnProperty(id)) return assignments[id];
+                
+                const newId = clusterIdCounter++;
+                clusters[newId] = [id];
+                assignments[id] = newId;
+                return newId;
+            };
+
+            // 1. Identify pairs above the threshold and ensure they belong to the same cluster
+            for (let i = 0; i < N; i++) {
+                for (let j = i + 1; j < N; j++) {
+                    if (matrix[i][j] >= threshold) { 
+                        const id_i = studentIds[i];
+                        const id_j = studentIds[j];
+
+                        const cluster_i = getOrCreateCluster(id_i);
+                        const cluster_j = getOrCreateCluster(id_j);
+                        
+                        // If they are in different clusters, merge them.
+                        if (cluster_i !== cluster_j) {
+                            
+                            // Determine which cluster to dissolve (source) and which to keep (target)
+                            const [dissolveId, keepId] = cluster_i < cluster_j ? [cluster_j, cluster_i] : [cluster_i, cluster_j];
+
+                            if (clusters[dissolveId] && clusters[keepId]) {
+                                // Move all students from source to target cluster
+                                clusters[dissolveId].forEach(studentId => {
+                                    if (!clusters[keepId].includes(studentId)) { 
+                                        clusters[keepId].push(studentId);
+                                    }
+                                    assignments[studentId] = keepId;
+                                });
+                                // Remove the old, now-empty cluster
+                                delete clusters[dissolveId];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Ensure all students, including singles, are accounted for in the assignments structure.
+            studentIds.forEach(id => {
+                if (!assignments.hasOwnProperty(id)) {
+                    // Assign unclustered individuals to a unique cluster
+                    getOrCreateCluster(id);
+                }
+            });
+
+            // 3. Prepare the final result format
+            const finalClusters = Object.entries(clusters).reduce((acc, [id, students]) => {
+                acc[id] = students;
+                return acc;
+            }, {});
+            
+            return { clusters: finalClusters, assignments };
+        }
+
+        /**
+         * Generates the full analysis report object from the clustering results.
+         */
+        function generateAnalysisReport(clusters, assignments, rawData, analysisDurationMs) {
+            const flaggedClusters = Object.entries(clusters)
+                .filter(([, students]) => students.length >= 2)
+                .map(([id, students]) => ({ id, students }));
+            
+            const flaggedCount = flaggedClusters.reduce((sum, c) => sum + c.students.length, 0);
+
+            return {
+                timestamp: new Date().toISOString(),
+                similarityThreshold: parseFloat(similaritySlider.value),
+                timeSyncWindowMs: TIME_SYNCHRONIZATION_WINDOW_MS,
+                analysisDurationMs: analysisDurationMs, // New duration field
+                theoreticalComplexity: 'O(N\u00b2) for N students (Simplified Clustering)', // Theoretical complexity
+                totalStudents: rawData.length,
+                totalClusters: Object.keys(clusters).length,
+                flaggedCount: flaggedCount,
+                flaggedClusters: flaggedClusters,
+                allClusterAssignments: assignments
+            };
+        }
+
+
+        // --- RENDERING FUNCTIONS ---
+
+        function renderClusterPill(studentId, assignment, isFlagged = false) {
+            // Check if assignment is defined before using modulo
+            const assignmentValue = assignment !== undefined && assignment !== null ? assignment : 0;
+            const colorIndex = assignmentValue % CLUSTER_COLORS.length;
+            const baseClass = CLUSTER_COLORS[colorIndex];
+            const iconHtml = isFlagged 
+                ? getIconSVG('zap', 14, 'mr-1.5') 
+                : getIconSVG('users', 14, 'mr-1.5');
+
+            return `
+                <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full text-white shadow-md transition duration-150 ease-in-out ${baseClass}">
+                    ${iconHtml}
+                    ${studentId}
+                </span>
+            `;
+        }
+
+        function renderHeaderCard(iconHtml, title, value, className = 'bg-white') {
+            return `
+                <div class="p-5 rounded-xl shadow-lg flex items-center justify-between ${className} transition duration-300 transform hover:scale-[1.02] border border-opacity-20 border-gray-900">
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">${title}</p>
+                        <p class="text-3xl font-bold mt-1">${value}</p>
+                    </div>
+                    ${iconHtml}
+                </div>
+            `;
+        }
+
+        /**
+         * Renders the full report into the DOM elements.
+         */
+        function renderReport(analysisResult, currentThreshold) {
+            // Guard clause to prevent the TypeError
+            if (!analysisResult || !analysisResult.flaggedClusters) {
+                console.error("renderReport failed: analysisResult or its flaggedClusters property is invalid.");
+                return;
+            }
+            
+            resultsDashboard.classList.remove('hidden');
+            downloadJsonReportBtn.disabled = false; // Enable download button
+            downloadCsvReportBtn.disabled = false;
+
+            // 1. Render Summary Cards
+            summaryCards.innerHTML = '';
+            // Icons are hardcoded SVG strings for simplicity
+            summaryCards.innerHTML += renderHeaderCard('<svg class="icon opacity-50" width="32" height="32" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/></svg>', "Total Students Analyzed", analysisResult.totalStudents, "bg-white text-gray-800");
+            // NEW CARD: Analysis Time
+            summaryCards.innerHTML += renderHeaderCard('<svg class="icon opacity-50" width="32" height="32" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', "Processing Time (ms)", analysisResult.analysisDurationMs.toFixed(2), "bg-white text-gray-800");
+            summaryCards.innerHTML += renderHeaderCard('<svg class="icon opacity-50 text-red-700" width="32" height="32" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>', "Flagged Clusters", analysisResult.flaggedClusters.length, "bg-red-50 text-red-800");
+            summaryCards.innerHTML += renderHeaderCard('<svg class="icon opacity-50 text-red-700" width="32" height="32" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h18.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', "Suspicious Students", analysisResult.flaggedCount, "bg-red-50 text-red-800");
+
+            // 2. Render Flagged Clusters
+            flaggedClustersOutput.innerHTML = '';
+            
+            // Complexity Note
+            const complexityNote = `<p class="text-sm font-medium text-gray-500 mt-2">Current complexity: ${analysisResult.theoreticalComplexity}</p>`;
+
+            if (analysisResult.flaggedClusters.length > 0) {
+                analysisResult.flaggedClusters.forEach((cluster, index) => {
+                    let pillHtml = cluster.students.map(id => {
+                        return renderClusterPill(id, analysisResult.allClusterAssignments[id], true);
+                    }).join('');
+
+                    flaggedClustersOutput.innerHTML += `
+                        <div class="p-5 rounded-xl bg-red-100 border border-red-400 shadow-md transition duration-200 hover:bg-red-50">
+                            <h4 class="font-extrabold text-xl text-red-800 mb-2">
+                                Group ${index + 1} (Cluster ID: ${cluster.id}) - ${cluster.students.length} Students
+                            </h4>
+                            <p class="text-red-700 mb-3 font-medium">Action Required: Review high similarity patterns (answers & timing) within this group. (Threshold: ${Math.round(currentThreshold * 100)}%)</p>
+                            <div class="flex flex-wrap gap-3">${pillHtml}</div>
+                        </div>
+                    `;
+                });
+                flaggedClustersOutput.innerHTML += complexityNote;
+            } else {
+                flaggedClustersOutput.innerHTML = `
+                    <p class="text-green-700 p-4 border border-green-300 rounded-xl bg-green-50 font-semibold flex items-center">
+                        ✅ No large suspicious clusters were detected based on the current threshold (${Math.round(currentThreshold * 100)}%).
+                    </p>
+                ` + complexityNote;
+            }
+
+            // 3. Render All Student Assignments
+            allAssignmentsOutput.innerHTML = '';
+            
+            rawStudentData.forEach(student => {
+                const studentId = student.StudentID;
+                // Safely retrieve the cluster ID from the full assignments object
+                const clusterId = analysisResult.allClusterAssignments[studentId]; 
+                
+                // Check if this cluster ID is among the flagged clusters for styling
+                const isFlagged = analysisResult.flaggedClusters.some(c => c.id === clusterId.toString());
+                
+                allAssignmentsOutput.innerHTML += renderClusterPill(studentId, clusterId, isFlagged);
+            });
+        }
+
+        // --- DOWNLOAD FUNCTIONS ---
+
+        function generateCsvContent(result) {
+            if (!result || !result.allClusterAssignments) return '';
+
+            const header = "StudentID,ClusterID,Flagged_Status\n";
+            const rows = rawStudentData.map(student => {
+                const id = student.StudentID;
+                const clusterId = result.allClusterAssignments[id] || 'N/A';
+                const isFlagged = result.flaggedClusters.some(c => c.students.includes(id));
+                const flagStatus = isFlagged ? 'FLAGGED_COLLUSION_GROUP' : 'CLEAN';
+                return `${id},${clusterId},${flagStatus}`;
+            }).join('\n');
+
+            return header + rows;
+        }
+
+        function downloadReport(format) {
+            if (!lastAnalysisResult) {
+                updateStatus("No analysis result available to download.", true);
+                return;
+            }
+
+            let fileContent, mimeType, filenameSuffix;
+            const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+
+            if (format === 'json') {
+                fileContent = JSON.stringify(lastAnalysisResult, null, 2);
+                mimeType = 'application/json';
+                filenameSuffix = 'json';
+            } else if (format === 'csv') {
+                fileContent = generateCsvContent(lastAnalysisResult);
+                mimeType = 'text/csv';
+                filenameSuffix = 'csv';
+            } else {
+                updateStatus(`Unsupported download format: ${format}.`, true);
+                return;
+            }
+            
+            const blob = new Blob([fileContent], { type: mimeType });
+            
+            // Create a temporary link element
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `invigilation_report_${timestamp}.${filenameSuffix}`;
+            
+            // Append to body, click, and remove
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            updateStatus(`Report downloaded successfully as ${format.toUpperCase()}.`, false);
+        }
+
+        // --- EVENT HANDLERS ---
+
+        function handleFileChange(event) {
+            currentFile = event.target.files[0];
+            rawStudentData = [];
+            simMatrix = null;
+            resultsDashboard.classList.add('hidden');
+            lastAnalysisResult = null; // Clear previous result
+            downloadJsonReportBtn.disabled = true;
+            downloadCsvReportBtn.disabled = true;
+
+            if (currentFile) {
+                const fileName = currentFile.name;
+                
+                // Check for unsupported Excel files and warn the user
+                if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                    updateStatus("Warning: Native Excel (.xlsx/.xls) files cannot be read directly. Please save the data as a **CSV** or **TSV** file and re-upload.", true);
+                    fileStatusText.textContent = `File Loaded: ${fileName} (Convert to CSV/TSV!)`;
+                    runAnalysisBtn.disabled = true;
+                    runAnalysisBtn.className = 'w-full md:w-auto px-8 py-3 text-lg font-bold rounded-xl text-white transition duration-300 transform bg-red-400 cursor-not-allowed';
+                    return;
+                }
+                
+                fileStatusText.textContent = `File Loaded: ${fileName}`;
+                runAnalysisBtn.disabled = false;
+                runAnalysisBtn.className = 'w-full md:w-auto px-8 py-3 text-lg font-bold rounded-xl text-white transition duration-300 transform bg-red-600 hover:bg-red-700 shadow-red-500/50 shadow-lg active:scale-95';
+                updateStatus('File selected. Press "Run Analysis" to proceed.');
+            } else {
+                fileStatusText.textContent = 'Click here to upload CSV/TSV Exam Data (Required Columns: StudentID, Qx, Timestamp_ms)';
+                runAnalysisBtn.disabled = true;
+                runAnalysisBtn.className = 'w-full md:w-auto px-8 py-3 text-lg font-bold rounded-xl text-white transition duration-300 transform bg-red-400 cursor-not-allowed';
+                updateStatus('Awaiting file upload...');
+            }
+        }
+
+        /**
+         * Parses CSV/TSV data, intelligently determining the separator.
+         */
+        async function parseFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const text = e.target.result;
+                        const lines = text.trim().split('\n');
+                        if (lines.length < 2) throw new Error("File is empty or contains only headers.");
+
+                        const firstLine = lines[0];
+                        let separator = ','; // Default to comma
+
+                        // Determine separator based on the first data row
+                        if (firstLine.includes('\t') && !firstLine.includes(',')) {
+                            separator = '\t'; // Use tab if it exists and comma doesn't
+                        } else {
+                            // Try comma first. If it results in only one column, fall back to tab.
+                            const commaSplit = firstLine.split(',');
+                            if (commaSplit.length === 1 && firstLine.includes('\t')) {
+                                separator = '\t';
+                            }
+                        }
+
+                        const headers = firstLine.split(separator).map(h => h.trim());
+                        const data = lines.slice(1).map(line => {
+                            const values = line.split(separator).map(v => v.trim());
+                            const student = {};
+                            headers.forEach((header, i) => {
+                                if (header.startsWith('Q')) {
+                                    student[header] = values[i];
+                                } else if (header === 'Timestamp_ms') {
+                                    student[header] = parseInt(values[i], 10);
+                                } else {
+                                    student[header] = values[i];
+                                }
+                            });
+                            if (!student.StudentID || isNaN(student.Timestamp_ms)) {
+                                throw new Error(`Invalid row data detected: Missing StudentID or invalid Timestamp in row ${lines.indexOf(line) + 1}.`);
+                            }
+                            return student;
+                        });
+
+                        if (!data[0] || !Object.keys(data[0]).some(k => k.startsWith('Q'))) {
+                            throw new Error("The file must contain question columns starting with 'Q', like Q1, Q2, etc.");
+                        }
+                        resolve(data);
+                    } catch (err) {
+                        reject(err);
+                    }
+                };
+                // --- FIX: More specific error reporting on file read failure ---
+                reader.onerror = () => reject(new Error('Failed to read the file content. Ensure the file is not corrupted or too large.'));
+                reader.readAsText(file);
+            });
+        }
+
+        async function handleRunAnalysisClick() {
+            if (!currentFile) return;
+
+            runAnalysisBtn.disabled = true;
+            runAnalysisBtn.textContent = 'Analyzing...';
+            
+            try {
+                const startTime = performance.now(); // Start timing
+
+                updateStatus('Reading and parsing file...');
+                
+                // 1. Parse File and get Raw Data
+                rawStudentData = await parseFile(currentFile);
+                updateStatus(`File parsed successfully. Calculating similarity for ${rawStudentData.length} students...`);
+                
+                // 2. Calculate Similarity Matrix (only done once)
+                simMatrix = calculateSimilarityMatrix(rawStudentData);
+                
+                // Show the threshold slider
+                thresholdContainer.classList.remove('hidden');
+
+                // 3. Run initial Clustering and Report generation
+                const currentThreshold = parseFloat(similaritySlider.value);
+                
+                const { clusters, assignments } = performSimplifiedClustering(
+                    simMatrix, 
+                    rawStudentData.map(s => s.StudentID), 
+                    currentThreshold
+                );
+                
+                const endTime = performance.now(); // End timing
+                const duration = endTime - startTime;
+
+                const analysisResult = generateAnalysisReport(clusters, assignments, rawStudentData, duration);
+                lastAnalysisResult = analysisResult; // Store for download
+                
+                renderReport(analysisResult, currentThreshold);
+                updateStatus(`Analysis complete in ${duration.toFixed(2)}ms! Check the interactive report below.`);
+
+            } catch (err) {
+                // Ensure error handling clears state and updates status bar
+                updateStatus(`Analysis Error: ${err.message}`, true);
+                console.error('Analysis Error:', err);
+                simMatrix = null;
+                rawStudentData = [];
+                resultsDashboard.classList.add('hidden');
+                lastAnalysisResult = null;
+            } finally {
+                runAnalysisBtn.disabled = false;
+                runAnalysisBtn.innerHTML = '<div class="flex items-center justify-center"><svg class="icon icon-zap mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Run Analysis</div>';
+            }
+        }
+
+        function handleThresholdChange(event) {
+            const currentThreshold = parseFloat(event.target.value);
+            thresholdValueSpan.textContent = `${Math.round(currentThreshold * 100)}%`;
+            
+            if (simMatrix && rawStudentData.length > 0) {
+                const startTime = performance.now(); // Start timing
+                updateStatus(`Threshold adjusted to ${Math.round(currentThreshold * 100)}%. Recalculating clusters...`);
+                
+                try {
+                    const { clusters, assignments } = performSimplifiedClustering(
+                        simMatrix, 
+                        rawStudentData.map(s => s.StudentID), 
+                        currentThreshold
+                    );
+                    
+                    const endTime = performance.now(); // End timing
+                    const duration = endTime - startTime;
+
+                    const analysisResult = generateAnalysisReport(clusters, assignments, rawStudentData, duration);
+                    lastAnalysisResult = analysisResult; // Update for download
+                    
+                    renderReport(analysisResult, currentThreshold);
+                    updateStatus(`Recalculation complete in ${duration.toFixed(2)}ms. Report updated.`);
+                } catch (err) {
+                    // Catch rendering or clustering errors during interactive updates
+                    updateStatus(`Interactive update error: ${err.message}`, true);
+                    console.error('Interactive Update Error:', err);
+                }
+            }
+        }
+        
+        // --- Initialization ---
+        window.onload = () => {
+             // Set initial threshold display
+             thresholdValueSpan.textContent = `${Math.round(DEFAULT_SIMILARITY_THRESHOLD * 100)}%`;
+             similaritySlider.value = DEFAULT_SIMILARITY_THRESHOLD;
+             downloadJsonReportBtn.disabled = true;
+             downloadCsvReportBtn.disabled = true;
+        };
+
+    </script>
+</body>
+</html>
